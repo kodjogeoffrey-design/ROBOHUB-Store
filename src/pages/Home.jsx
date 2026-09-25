@@ -48,7 +48,7 @@ const valueProps = [
   { icon: GraduationCap, title: "Student-run", desc: "Built by makers who actually use this stuff in their own projects." },
   { icon: Zap, title: "Real components", desc: "No fakes, no mystery chips. Every part is tested before it ships." },
   { icon: MessageCircle, title: "WhatsApp support", desc: "Stuck on a build? Message us and a real human helps you wire it." },
-  { icon: Truck, title: "Fast delivery", desc: "Accra same-day on weekdays. Nationwide in 1–3 days." },
+  { icon: Truck, title: "Fast delivery", desc: "Tarkwa same-day on weekdays. Nationwide in 1–3 days." },
 ];
 
 export default function Home() {
@@ -77,7 +77,7 @@ export default function Home() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 font-mono-tech text-[11px] uppercase tracking-widest text-accent">
                 <span className="led-blink h-1.5 w-1.5 rounded-full bg-accent" />
-                Student-run STEM · Accra, Ghana
+                Student-run STEM · Tarkwa, Ghana
               </div>
               <h1 className="mt-4 font-heading text-4xl font-700 leading-[1.05] tracking-tight md:text-6xl">
                 {tagHead}

@@ -12,7 +12,7 @@ const SETTINGS_ROW_ID = 1;
 
 export const DEFAULT_SETTINGS = Object.freeze({
   tagline: STORE_TAGLINE,
-  announcement: "Free delivery in Accra over GH₵ 200 · WhatsApp orders 7am–9pm",
+  announcement: "Free delivery in Tarkwa over GH₵ 200 · WhatsApp orders 7am–9pm",
 });
 
 /** @type {Record<string, any> | null} */

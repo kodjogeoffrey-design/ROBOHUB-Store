@@ -546,7 +546,7 @@ export default function Admin() {
               className={`mt-1 ${inputCls}`}
               value={settings.announcement}
               onChange={(e) => setSettings((s) => ({ ...s, announcement: e.target.value }))}
-              placeholder="Free delivery in Accra over GH₵ 200"
+              placeholder="Free delivery in Tarkwa over GH₵ 200"
             />
           </label>
           <div className="md:col-span-2">

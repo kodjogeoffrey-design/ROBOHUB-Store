@@ -14,7 +14,7 @@ export default function Contact() {
   const channels = [
     { icon: MessageCircle, t: "WhatsApp", d: `+${WHATSAPP_NUMBER}`, sub: "Fastest — we reply 7am to 9pm", href: buildWhatsAppLink("Hi ROBOHUB!") },
     { icon: Mail, t: "Email", d: "hello@robohub.store", sub: "For longer questions & invoices", href: "mailto:hello@robohub.store" },
-    { icon: MapPin, t: "Location", d: "Accra, Ghana", sub: "Pickup by arrangement", href: null },
+    { icon: MapPin, t: "Location", d: "Tarkwa, Ghana", sub: "Pickup by arrangement", href: null },
     { icon: Clock, t: "Hours", d: "Mon–Sat · 7am–9pm", sub: "Sunday closed", href: null },
   ];
 

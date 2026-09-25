@@ -76,7 +76,7 @@ create policy "admin write settings" on public.settings for all
 -- 4. Store settings row ----------------------------------------------------
 insert into public.settings (id, tagline, announcement)
 values (1, 'The Hardware behind the innovation',
-        'Free delivery in Accra over GH₵ 200 · WhatsApp orders 7am–9pm')
+        'Free delivery in Tarkwa over GH₵ 200 · WhatsApp orders 7am–9pm')
 on conflict (id) do nothing;
 
 -- 5. Storage bucket for product photos -------------------------------------
