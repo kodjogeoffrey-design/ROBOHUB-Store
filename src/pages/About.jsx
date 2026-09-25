@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Cpu, GraduationCap, Wrench, Heart, ArrowRight, MessageCircle } from "lucide-react";
+import { Cpu, GraduationCap, Wrench, Heart, ArrowRight, MessageCircle, Target, Eye } from "lucide-react";
 import { buildWhatsAppLink, splitStoreTagline } from "@/lib/config";
 import { getSettings } from "@/lib/settings";
 
@@ -32,9 +32,10 @@ export default function About() {
             )}
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
-            ROBOHUB is a rising, student-run STEM collective — not official yet, but serious about
-            the work. The store is one branch of it: a way to get real components into the hands of
-            students across Ghana without the wait or the markup.
+            ROBOHUB is an ambitious, student-run STEM collective bridging the gap between big
+            ideas and practical builds. This store is our answer to the hustle: putting reliable,
+            real-world components directly into the hands of students across Ghana without the
+            markup or the wait.
           </p>
         </div>
       </section>
@@ -45,21 +46,56 @@ export default function About() {
           <p className="font-mono-tech text-[11px] uppercase tracking-widest text-accent">▸ The story</p>
           <div className="mt-4 space-y-4 text-base leading-relaxed text-muted-foreground">
             <p>
-              It started the way most good things do — frustration. A group of us wanted to build a
-              line-following robot for a competition, and we spent more time chasing down parts than
-              actually building. Boards arrived late, sensors were fake, and the "starter kit" we
-              ordered online was missing half the pieces.
+              It started the way the best engineering projects do: out of pure frustration. Trying
+              to source parts for a competition meant wasting more time tracking down hardware than
+              actually building. Shipping took weeks, components arrived dead on arrival, and online
+              "starter kits" were consistently missing the crucial pieces needed to cross the finish
+              line.
             </p>
             <p>
-              So we started sourcing our own. We tested everything in our own projects, figured out
-              what actually worked, and started lending parts to classmates. That turned into a small
-              shelf, then a WhatsApp group, and now this store.
+              So, we took matters into our own hands. We began sourcing our own reliable inventory,
+              testing every board and sensor on our own workbenches, and sharing extra hardware with
+              classmates. What started as a single shelf in a room quickly grew into a community
+              WhatsApp group, and finally, into this store.
             </p>
             <p>
-              ROBOHUB isn't a company yet — it's a student group with a mission: make it possible for
-              any student in Ghana to go from an idea to a working build in a weekend, with parts they
-              can trust and support that actually replies.
+              ROBOHUB operates as a grassroots collective with a clear mission: to make it possible
+              for any student in Ghana to take an idea from a whiteboard to a working build over a
+              single weekend—backed by hardware you can trust and support that actually answers.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Mission & Vision */}
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-5xl px-4 py-12">
+          <p className="font-mono-tech text-[11px] uppercase tracking-widest text-accent">
+            ▸ Mission &amp; vision
+          </p>
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <div className="rounded-sm border border-border bg-card p-6">
+              <span className="grid h-11 w-11 place-items-center rounded-sm border border-primary/30 bg-primary/10">
+                <Target className="h-5 w-5 text-primary" />
+              </span>
+              <h3 className="mt-4 font-heading text-xl font-700">Mission</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                To eliminate the barriers of cost, shipping delays, and bad hardware, making it
+                possible for any student in Ghana to take an idea from a whiteboard to a working
+                build over a single weekend.
+              </p>
+            </div>
+            <div className="rounded-sm border border-border bg-card p-6">
+              <span className="grid h-11 w-11 place-items-center rounded-sm border border-accent/30 bg-accent/10">
+                <Eye className="h-5 w-5 text-accent" />
+              </span>
+              <h3 className="mt-4 font-heading text-xl font-700">Vision</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                To build Ghana's most trusted, student-driven engineering network—where the next
+                generation of makers has immediate access to the tools, components, and real
+                community support they need to solve local problems.
+              </p>
+            </div>
           </div>
         </div>
       </section>

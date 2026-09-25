@@ -75,7 +75,7 @@ export default function Footer() {
 
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 md:flex-row md:items-center">
           <p className="font-mono-tech text-[11px] uppercase tracking-wider text-muted-foreground">
-            © {new Date().getFullYear()} {STORE_NAME} · Built by students, for makers
+            © {new Date().getFullYear()} {STORE_NAME} · A branch of the ROBOHUB collective
           </p>
           <div className="flex gap-5 font-mono-tech text-[11px] uppercase tracking-wider text-muted-foreground">
             <Link to="/tutorials" className="hover:text-foreground">Tutorials</Link>
