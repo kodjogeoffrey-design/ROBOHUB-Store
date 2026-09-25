@@ -2,7 +2,7 @@
 
 ## Project Context
 
-ROBOHUB Store is a static Vite + React storefront hosted on GitHub Pages, with Supabase as
+ROBOHUB Store is a static Vite + React storefront deployed on Vercel, with Supabase as
 its backend (products, reviews, settings, image storage, admin sign-in). Treat it as
 user-owned application code, keep changes focused on the user's request, and preserve
 existing project conventions.
@@ -20,7 +20,7 @@ Start with `README.md` for local setup and project layout.
 - `src/lib/reviews.js` — async per-product reviews (public read/insert in Supabase, localStorage fallback).
 - `src/lib/asset.js` — `assetUrl()` for base-relative public assets.
 - `src/lib/product-image.js` — generated SVG placeholder images.
-- `vite.config.js` — Vite config with `@` → `src` alias and `base: "./"` (required for GitHub Pages).
+- `vite.config.js` — Vite config with `@` → `src` alias and `base: "./"` (base-relative assets; keep it).
 - `src/App.jsx` — HashRouter routes (do not switch to BrowserRouter; Pages has no SPA rewrite).
 
 ## Working Notes

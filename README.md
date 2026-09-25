@@ -2,7 +2,7 @@
 
 A static React storefront for ROBOHUB — a student-run STEM collective in Accra, Ghana.
 Boards, sensors, motors, kits. Checkout happens on WhatsApp; there is no payment backend
-and no customer accounts. The **frontend is static** (Vite + React on GitHub Pages) and the
+and no customer accounts. The **frontend is static** (Vite + React on Vercel) and the
 **backend is Supabase** (products, reviews, settings, image storage).
 
 ## Prerequisites
@@ -80,20 +80,24 @@ edited; only the signed-in admin can delete them. Without Supabase they stay in
 4. Open `#/admin`, sign in, then import `robohub-catalog.json` (Admin → Import). To
    regenerate it from the seed file:
    `node --input-type=module -e "import {products} from './src/data/products.js'; import {writeFileSync} from 'node:fs'; writeFileSync('robohub-catalog.json', JSON.stringify(products,null,2))"`.
-5. Add the same two values as GitHub Actions secrets (below) so the Pages build has them.
+5. Add the same two values to the Vercel project (**Settings → Environment Variables**)
+   so production builds inline them — see below.
 
 ## Build & deploy
 
-`npm run build` emits `dist/`. The app uses **HashRouter** and `base: "./"`, so it works from any static host — including GitHub Pages project sites — with no rewrite rules.
+`npm run build` emits `dist/`. The app uses **HashRouter** and `base: "./"`, so it works from any static host with no rewrite rules.
 
-### GitHub Pages
+### Vercel
 
 1. Push this repo to GitHub.
-2. In **Settings → Pages**, set Source to **GitHub Actions**.
-3. In **Settings → Secrets and variables → Actions**, add repository secrets
-   `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Vite inlines them at build time).
-4. `.github/workflows/deploy.yml` runs lint/typecheck/test/build and deploys `dist/` on every push to `main`/`master`.
+2. At [vercel.com/new](https://vercel.com/new), import the repo (Vite preset:
+   build `npm run build`, output `dist` — both are auto-detected).
+3. Add environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+   (Project → Settings → Environment Variables), then redeploy.
+4. Every push to `master` now deploys automatically. Run `npm run lint`,
+   `npm run typecheck`, `npm test`, and `npm run build` before pushing — Vercel
+   does not run them for you.
 
 ### Other hosts
 
-Netlify, Vercel, Cloudflare Pages, etc.: build command `npm run build`, output `dist/`.
+Netlify, Cloudflare Pages, GitHub Pages, etc.: build command `npm run build`, output `dist/`.
