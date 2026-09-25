@@ -73,8 +73,8 @@ edited; only the signed-in admin can delete them. Without Supabase they stay in
 
 ## Supabase setup
 
-1. Paste the schema/RLS SQL into **SQL Editor** (tables `products`, `reviews`, `settings` +
-   the public `product-images` bucket).
+1. Paste `supabase/schema.sql` into **SQL Editor** → Run (tables `products`, `reviews`,
+   `settings` + the public `product-images` bucket).
 2. Create the admin user (see above).
 3. Fill `.env.local` with the Project URL and `anon public` key.
 4. Open `#/admin`, sign in, then import `robohub-catalog.json` (Admin → Import). To
