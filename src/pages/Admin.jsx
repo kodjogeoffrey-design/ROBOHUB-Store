@@ -10,6 +10,8 @@ import {
   LogIn,
   LogOut,
   ImagePlus,
+  MessageSquare,
+  RefreshCw,
 } from "lucide-react";
 import {
   saveCatalog,
@@ -18,6 +20,7 @@ import {
   listProducts,
 } from "@/api/catalog";
 import { getSettings, saveSettings, resetSettings } from "@/lib/settings";
+import { listAllReviews, deleteReview } from "@/lib/reviews";
 import { signIn, signOut, getSession, onAuthChange } from "@/lib/auth";
 import {
   isSupabaseConfigured,
@@ -35,6 +38,7 @@ const EMPTY_PRODUCT = {
   short_description: "",
   description: "",
   image_url: "",
+  images: [],
   stock_status: "In Stock",
   featured: false,
   rating: 4.5,
@@ -42,7 +46,12 @@ const EMPTY_PRODUCT = {
 };
 
 function productToForm(p) {
-  return { ...EMPTY_PRODUCT, ...p, price: Number(p.price) || 0 };
+  return {
+    ...EMPTY_PRODUCT,
+    ...p,
+    price: Number(p.price) || 0,
+    images: Array.isArray(p.images) ? p.images : [],
+  };
 }
 
 export default function Admin() {
@@ -57,6 +66,8 @@ export default function Admin() {
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [modReviews, setModReviews] = useState([]);
+  const [galleryDraft, setGalleryDraft] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +90,18 @@ export default function Admin() {
     listProducts("-created_date", 0)
       .then((list) => {
         if (!cancelled) setProducts(list.map(productToForm));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
+  useEffect(() => {
+    let cancelled = false;
+    listAllReviews()
+      .then((list) => {
+        if (!cancelled) setModReviews(list);
       })
       .catch(() => {});
     return () => {
@@ -202,6 +225,71 @@ export default function Admin() {
     }
   };
 
+  const galleryList = () => (Array.isArray(form.images) ? form.images : []);
+
+  const addGalleryUrl = (raw) => {
+    const value = String(raw ?? "").trim();
+    if (!value) return;
+    if (galleryList().includes(value)) {
+      toast({ title: "Already in the gallery" });
+      return;
+    }
+    setField("images", [...galleryList(), value]);
+  };
+
+  const removeGalleryImage = (index) => {
+    setField("images", galleryList().filter((_, i) => i !== index));
+  };
+
+  const uploadGalleryImage = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!isSupabaseConfigured || !session) {
+      toast({
+        title: "Sign in first",
+        description: "Photos upload to Supabase Storage once you are signed in.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const safeId = (form.id || "product").replace(/[^a-z0-9-_]/gi, "-").toLowerCase();
+    const path = `gallery/${safeId}-${Date.now()}.${ext}`;
+    setBusy(true);
+    try {
+      const { error } = await supabase.storage
+        .from(SUPABASE_PRODUCTS_BUCKET)
+        .upload(path, file, { cacheControl: "31536000", upsert: false });
+      if (error) throw new Error(error.message || "Upload failed");
+      const { data } = supabase.storage.from(SUPABASE_PRODUCTS_BUCKET).getPublicUrl(path);
+      setField("images", [...galleryList(), data.publicUrl]);
+      toast({ title: "Photo added to gallery" });
+    } catch (err) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Try another file",
+        variant: "destructive",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeReview = async (id) => {
+    try {
+      await deleteReview(id);
+      setModReviews((prev) => prev.filter((r) => r.id !== id));
+      toast({ title: "Review deleted" });
+    } catch (err) {
+      toast({
+        title: "Could not delete review",
+        description: err instanceof Error ? err.message : "Try again",
+        variant: "destructive",
+      });
+    }
+  };
+
   const saveProduct = async (e) => {
     e.preventDefault();
     if (!form.id || !form.name || !form.price) {
@@ -217,6 +305,7 @@ export default function Admin() {
       price: Number(form.price) || 0,
       rating: Number(form.rating) || 4.5,
       image_url: form.image_url || undefined,
+      images: galleryList(),
       featured: Boolean(form.featured),
     };
     const exists = products.some((p) => p.id === cleaned.id);
@@ -618,6 +707,62 @@ export default function Admin() {
                   placeholder="/images/products/… or a Supabase Storage URL"
                 />
               </div>
+
+              <div>
+                <span className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Gallery photos
+                </span>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  {galleryList().map((src, i) => (
+                    <div key={`${src}-${i}`} className="relative">
+                      <img
+                        src={src}
+                        alt=""
+                        className="h-14 w-14 rounded-sm border border-border object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(i)}
+                        aria-label="Remove photo"
+                        className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full border border-border bg-background text-[10px] leading-none text-muted-foreground hover:border-destructive/50 hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <label className="flex h-14 cursor-pointer items-center gap-1.5 rounded-sm border border-dashed border-border px-3 font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground hover:border-primary/50 hover:text-foreground">
+                    <ImagePlus className="h-3.5 w-3.5" /> Upload
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={uploadGalleryImage}
+                      disabled={busy}
+                    />
+                  </label>
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className={inputCls}
+                    value={galleryDraft}
+                    onChange={(e) => setGalleryDraft(e.target.value)}
+                    placeholder="/images/products/… or Storage URL"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addGalleryUrl(galleryDraft);
+                      setGalleryDraft("");
+                    }}
+                    className="rounded-sm border border-border bg-background px-3 font-mono-tech text-[11px] uppercase tracking-wider hover:border-primary/50"
+                  >
+                    Add
+                  </button>
+                </div>
+                <p className="mt-1.5 font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Shown as thumbnails under the product photo
+                </p>
+              </div>
               <label className="block">
                 <span className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
                   Short description
@@ -750,6 +895,58 @@ export default function Admin() {
             <Upload className="h-3.5 w-3.5" /> Import pasted JSON
           </button>
         </div>
+      </section>
+
+      {/* Reviews moderation */}
+      <section className="mt-6 rounded-sm border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="flex items-center gap-2 font-heading text-lg font-600">
+            <MessageSquare className="h-4 w-4 text-primary" /> Customer reviews
+            <span className="font-mono-tech text-xs text-muted-foreground">
+              ({modReviews.length})
+            </span>
+          </h2>
+          <button
+            type="button"
+            onClick={() =>
+              listAllReviews()
+                .then(setModReviews)
+                .catch(() => {})
+            }
+            className="flex items-center gap-1.5 font-mono-tech text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+          </button>
+        </div>
+        {modReviews.length === 0 ? (
+          <p className="p-4 font-mono-tech text-[11px] uppercase tracking-wider text-muted-foreground">
+            No reviews yet
+          </p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {modReviews.map((r) => (
+              <li key={r.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {r.products?.name || r.product_id} · {r.created_date} · {r.rating}/5
+                  </p>
+                  <p className="mt-1 text-sm">
+                    <span className="font-600">{r.name}</span>{" "}
+                    <span className="text-muted-foreground">— {r.comment}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeReview(r.id)}
+                  aria-label={`Delete review by ${r.name}`}
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-sm border border-border text-muted-foreground hover:border-destructive/50 hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

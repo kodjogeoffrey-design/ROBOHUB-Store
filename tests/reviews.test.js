@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addReview, listReviews, averageLocalRating, clearReviews } from "../src/lib/reviews.js";
+import {
+  addReview,
+  listReviews,
+  averageLocalRating,
+  clearReviews,
+  deleteReview,
+} from "../src/lib/reviews.js";
 
 const PRODUCT = "test-product-reviews";
 
@@ -45,5 +51,16 @@ test("rating is clamped to 1–5", async () => {
   const low = await addReview(PRODUCT, { name: "Min", rating: -3, comment: "Rough" });
   assert.equal(high.rating, 5);
   assert.equal(low.rating, 1);
+  await clearReviews();
+});
+
+test("deleteReview removes a single review", async () => {
+  await clearReviews();
+  const keep = await addReview(PRODUCT, { name: "Kofi", rating: 5, comment: "Solid" });
+  const drop = await addReview(PRODUCT, { name: "Ama", rating: 2, comment: "Loose wires" });
+  await deleteReview(drop.id);
+  const list = await listReviews(PRODUCT);
+  assert.equal(list.length, 1);
+  assert.equal(list[0].id, keep.id);
   await clearReviews();
 });

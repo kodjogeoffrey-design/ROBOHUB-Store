@@ -123,6 +123,48 @@ export async function averageLocalRating(productId) {
   return list.reduce((sum, r) => sum + r.rating, 0) / list.length;
 }
 
+/** Every review, newest first (admin moderation). Includes the product name when known. */
+export async function listAllReviews() {
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("*, products(name, sku)")
+        .order("created_date", { ascending: false })
+        .order("id", { ascending: false });
+      if (error) throw error;
+      if (data) return data;
+    } catch {
+      // fall through to local reviews
+    }
+  }
+  const all = readAll();
+  const flat = [];
+  for (const [productId, list] of all) {
+    for (const review of list) flat.push({ ...review, product_id: productId });
+  }
+  return flat.sort((a, b) => String(b.created_date).localeCompare(String(a.created_date)));
+}
+
+/** Delete one review. Anonymous visitors can't do this — RLS requires a signed-in admin. */
+export async function deleteReview(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from("reviews").delete().eq("id", id);
+    if (error) throw new Error(error.message || "Could not delete the review");
+    return;
+  }
+  const all = readAll();
+  let changed = false;
+  for (const [productId, list] of all) {
+    const next = list.filter((review) => review.id !== id);
+    if (next.length !== list.length) {
+      all.set(productId, next);
+      changed = true;
+    }
+  }
+  if (changed) writeAll(all);
+}
+
 /** Remove every review (admin only once Supabase is configured). */
 export async function clearReviews() {
   if (isSupabaseConfigured) {
