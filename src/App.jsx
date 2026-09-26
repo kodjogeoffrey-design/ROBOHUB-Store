@@ -12,6 +12,7 @@ import About from '@/pages/About';
 import Contact from '@/pages/Contact';
 import Tutorials from '@/pages/Tutorials';
 import Admin from '@/pages/Admin';
+import AdminPrank from '@/pages/AdminPrank';
 import PageNotFound from '@/pages/PageNotFound';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/tutorials" element={<Tutorials />} />
             <Route path="/console" element={<Admin />} />
+            <Route path="/admin" element={<AdminPrank />} />
             <Route path="*" element={<PageNotFound />} />
           </Route>
         </Routes>
