@@ -54,8 +54,8 @@ Run all four before considering a change done.
 ## Editing store details
 
 - **WhatsApp number, store name, currency** — top of `src/lib/config.js`.
-- **Tagline & announcement banner** — Admin page (`#/admin`), saved to the Supabase `settings` row.
-- **Products** — Admin page (`#/admin`), signed in. Edits save straight to the `products` table; `src/data/products.js` is only the seed/fallback.
+- **Tagline & announcement banner** — Admin page (`#/console`), saved to the Supabase `settings` row.
+- **Products** — Admin page (`#/console`), signed in. Edits save straight to the `products` table; `src/data/products.js` is only the seed/fallback.
 - **Product photos** — upload from the Admin product form (goes to the `product-images` Storage bucket), or paste an existing `/images/products/…` path.
 
 ## Admin access
@@ -63,7 +63,7 @@ Run all four before considering a change done.
 The Admin page is locked behind Supabase Auth:
 
 1. Supabase → **Authentication → Users → Add user** (email + password, auto-confirm).
-2. Open `#/admin` and sign in. Only signed-in admins can write products/settings or upload images.
+2. Open `#/console` and sign in. Only signed-in admins can write products/settings or upload images.
 
 ## Reviews
 
@@ -77,7 +77,7 @@ edited; only the signed-in admin can delete them. Without Supabase they stay in
    `settings` + the public `product-images` bucket).
 2. Create the admin user (see above).
 3. Fill `.env.local` with the Project URL and `anon public` key.
-4. Open `#/admin`, sign in, then import `robohub-catalog.json` (Admin → Import). To
+4. Open `#/console`, sign in, then import `robohub-catalog.json` (Admin → Import). To
    regenerate it from the seed file:
    `node --input-type=module -e "import {products} from './src/data/products.js'; import {writeFileSync} from 'node:fs'; writeFileSync('robohub-catalog.json', JSON.stringify(products,null,2))"`.
 5. Add the same two values to the Vercel project (**Settings → Environment Variables**)

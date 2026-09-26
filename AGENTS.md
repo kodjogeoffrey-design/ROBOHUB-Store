@@ -33,7 +33,7 @@ Start with `README.md` for local setup and project layout.
 - Real product photos live in `public/images/products/` and are referenced via each product's `image_url`;
   new photos upload to the `product-images` bucket from the Admin form.
 - Guide/reference images go in `public/images/guides/` (Tutorials page).
-- Admin edits save to Supabase; `#/admin` requires a Supabase sign-in.
+- Admin edits save to Supabase; `#/console` requires a Supabase sign-in.
 - UI components live in `src/components/ui/`; the shadcn CLI (`npx shadcn add <component>`)
   works against the existing `components.json` if more are needed.
 - Default dev command: `npm run dev`.
