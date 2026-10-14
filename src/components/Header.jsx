@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
-import { Menu, X, ShoppingCart } from "lucide-react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Menu, X, ShoppingCart, User, LogOut, Settings, Heart, Package } from "lucide-react";
 import { useCart } from "@/lib/cartStore";
 import { getSettings } from "@/lib/settings";
 import { assetUrl } from "@/lib/asset";
+import { useAuth } from "@/lib/auth-context";
+import AuthModal from "./AuthModal";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -16,8 +18,22 @@ const navLinks = [
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const { count } = useCart();
+  const { user, isAuthenticated, logout, loading } = useAuth();
+  const navigate = useNavigate();
   const announcement = getSettings().announcement.trim();
+
+  const handleLogout = async () => {
+    await logout();
+    setUserMenuOpen(false);
+    navigate("/");
+  };
+
+  const userInitial = user?.user_metadata?.full_name
+    ? user.user_metadata.full_name.trim().charAt(0).toUpperCase()
+    : user?.email?.charAt(0).toUpperCase() ?? "U";
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -78,6 +94,78 @@ export default function Header() {
                 </span>
               )}
             </Link>
+
+            {/* Auth / User menu */}
+            {loading ? (
+              <div className="h-10 w-10 md:hidden" />
+            ) : isAuthenticated ? (
+              <div className="relative">
+                <button
+                  className="flex h-10 items-center gap-2 rounded-sm border border-border px-3 pr-8 transition-colors hover:border-primary/50"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="true"
+                >
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-primary font-mono-tech text-sm font-600">
+                    {userInitial}
+                  </span>
+                  <span className="hidden font-mono-tech text-xs uppercase tracking-wider md:inline">{user?.user_metadata?.full_name || user?.email?.split("@")[0]}</span>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-1.5 w-48 rounded-sm border border-border bg-card shadow-lg py-1">
+                    <div className="px-3 py-2 border-b border-border">
+                      <p className="font-mono-tech text-xs font-600">{user?.user_metadata?.full_name || "Customer"}</p>
+                      <p className="font-mono-tech text-[10px] text-muted-foreground truncate">{user?.email}</p>
+                    </div>
+                    <Link
+                      to="/account"
+                      className="flex items-center gap-2 px-3 py-2 font-mono-tech text-xs uppercase tracking-wider hover:bg-accent"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <User className="h-3.5 w-3.5" /> Account
+                    </Link>
+                    <Link
+                      to="/account/orders"
+                      className="flex items-center gap-2 px-3 py-2 font-mono-tech text-xs uppercase tracking-wider hover:bg-accent"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Package className="h-3.5 w-3.5" /> Orders
+                    </Link>
+                    <Link
+                      to="/account/wishlist"
+                      className="flex items-center gap-2 px-3 py-2 font-mono-tech text-xs uppercase tracking-wider hover:bg-accent"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Heart className="h-3.5 w-3.5" /> Wishlist
+                    </Link>
+                    <Link
+                      to="/console"
+                      className="flex items-center gap-2 px-3 py-2 font-mono-tech text-xs uppercase tracking-wider hover:bg-accent text-primary"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Settings className="h-3.5 w-3.5" /> Admin Console
+                    </Link>
+                    <hr className="my-1 border-border" />
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2 px-3 py-2 font-mono-tech text-xs uppercase tracking-wider text-destructive hover:bg-accent"
+                    >
+                      <LogOut className="h-3.5 w-3.5" /> Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                className="flex h-10 items-center gap-2 rounded-sm border border-border bg-background px-3 py-2 font-mono-tech text-xs font-700 uppercase tracking-wider transition-colors hover:border-primary/50 md:hidden"
+                onClick={() => setAuthModalOpen(true)}
+              >
+                <User className="h-3.5 w-3.5" /> Sign in
+              </button>
+            )}
+
             <button
               className="grid h-10 w-10 place-items-center rounded-sm border border-border md:hidden"
               onClick={() => setOpen((v) => !v)}
@@ -103,9 +191,20 @@ export default function Header() {
                 {l.label}
               </Link>
             ))}
+            {!loading && !isAuthenticated && (
+              <button
+                className="mt-2 flex items-center justify-center gap-2 rounded-sm border border-border bg-background px-4 py-2 font-mono-tech text-xs font-700 uppercase tracking-wider hover:border-primary/50"
+                onClick={() => { setOpen(false); setAuthModalOpen(true); }}
+              >
+                <User className="h-3.5 w-3.5" /> Sign in
+              </button>
+            )}
           </nav>
         </div>
       )}
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </header>
   );
 }

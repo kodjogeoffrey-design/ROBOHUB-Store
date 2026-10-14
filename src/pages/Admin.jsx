@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   Download,
   Upload,
@@ -12,6 +12,8 @@ import {
   ImagePlus,
   MessageSquare,
   RefreshCw,
+  Search,
+  Calendar,
 } from "lucide-react";
 import {
   saveCatalog,
@@ -43,6 +45,13 @@ const EMPTY_PRODUCT = {
   featured: false,
   rating: 4.5,
   created_date: new Date().toISOString().slice(0, 10),
+  variants: [],
+  inventory_qty: 0,
+  seo_title: "",
+  seo_description: "",
+  slug: "",
+  published_at: null,
+  unpublished_at: null,
 };
 
 function productToForm(p) {
@@ -51,8 +60,26 @@ function productToForm(p) {
     ...p,
     price: Number(p.price) || 0,
     images: Array.isArray(p.images) ? p.images : [],
+    variants: Array.isArray(p.variants) ? p.variants : [],
+    inventory_qty: Number(p.inventory_qty) || 0,
+    seo_title: p.seo_title || "",
+    seo_description: p.seo_description || "",
+    slug: p.slug || "",
+    published_at: p.published_at || null,
+    unpublished_at: p.unpublished_at || null,
   };
 }
+
+const STOCK_OPTIONS = ["In Stock", "Low Stock", "Backorder", "Out of Stock"];
+const SORT_OPTIONS = [
+  { value: "-created_date", label: "Newest first" },
+  { value: "created_date", label: "Oldest first" },
+  { value: "name", label: "Name A–Z" },
+  { value: "-name", label: "Name Z–A" },
+  { value: "-price", label: "Price high–low" },
+  { value: "price", label: "Price low–high" },
+  { value: "-rating", label: "Rating high–low" },
+];
 
 export default function Admin() {
   const [products, setProducts] = useState([]);
@@ -68,6 +95,15 @@ export default function Admin() {
   const [busy, setBusy] = useState(false);
   const [modReviews, setModReviews] = useState([]);
   const [galleryDraft, setGalleryDraft] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [sortBy, setSortBy] = useState("-created_date");
+  const [showOnlyFeatured, setShowOnlyFeatured] = useState(false);
+  const [showOnlyLowStock, setShowOnlyLowStock] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,8 +153,58 @@ export default function Admin() {
     return fromData;
   }, [products, form.category]);
 
+  const filteredProducts = useMemo(() => {
+    let result = products;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.id.toLowerCase().includes(q) ||
+          (p.sku || "").toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q)
+      );
+    }
+
+    if (showOnlyFeatured) {
+      result = result.filter((p) => p.featured);
+    }
+
+    if (showOnlyLowStock) {
+      result = result.filter((p) => p.stock_status === "Low Stock" || p.stock_status === "Out of Stock");
+    }
+
+    // Sort
+    const [field, dir] = sortBy.startsWith("-") ? [sortBy.slice(1), -1] : [sortBy, 1];
+    result = [...result].sort((a, b) => {
+      const av = a[field];
+      const bv = b[field];
+      if (av === bv) return 0;
+      if (av === null || av === undefined) return dir;
+      if (bv === null || bv === undefined) return -dir;
+      return av < bv ? -dir : dir;
+    });
+
+    return result;
+  }, [products, searchQuery, sortBy, showOnlyFeatured, showOnlyLowStock]);
+
   const setField = (key, value) => {
     setForm((f) => ({ ...f, [key]: value }));
+    // Clear error when user types
+    if (formErrors[key]) {
+      setFormErrors((e) => ({ ...e, [key]: undefined }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!form.id?.trim()) errors.id = "ID is required";
+    if (!form.name?.trim()) errors.name = "Name is required";
+    if (!form.price || Number(form.price) < 0) errors.price = "Valid price is required";
+    if (form.rating && (Number(form.rating) < 1 || Number(form.rating) > 5)) errors.rating = "Rating must be 1–5";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const startNew = () => {
@@ -128,16 +214,77 @@ export default function Admin() {
       id: `custom-${Date.now().toString(36)}`,
       created_date: new Date().toISOString().slice(0, 10),
     });
+    setFormErrors({});
   };
 
   const startEdit = (p) => {
     setEditingId(p.id);
     setForm(productToForm(p));
+    setFormErrors({});
   };
 
   const clearForm = () => {
     setEditingId(null);
     setForm(EMPTY_PRODUCT);
+    setFormErrors({});
+  };
+
+  const duplicateProduct = (p) => {
+    const newProduct = {
+      ...productToForm(p),
+      id: `custom-${Date.now().toString(36)}`,
+      name: `${p.name} (copy)`,
+      sku: "",
+      created_date: new Date().toISOString().slice(0, 10),
+      variants: [],
+      inventory_qty: 0,
+      seo_title: "",
+      seo_description: "",
+      slug: "",
+      published_at: null,
+      unpublished_at: null,
+    };
+    setEditingId(newProduct.id);
+    setForm(newProduct);
+    setFormErrors({});
+  };
+
+  const toggleSelection = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredProducts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredProducts.map((p) => p.id)));
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (!selectedIds.size) return;
+    const next = products.filter((p) => !selectedIds.has(p.id));
+    if (!next.length) {
+      toast({ title: "Cannot remove all products" });
+      return;
+    }
+    const saved = await persist(next);
+    if (saved) {
+      setSelectedIds(new Set());
+      if (editingId && selectedIds.has(editingId)) clearForm();
+    }
+  };
+
+  const bulkToggleFeatured = async (featured) => {
+    if (!selectedIds.size) return;
+    const next = products.map((p) => (selectedIds.has(p.id) ? { ...p, featured } : p));
+    const saved = await persist(next);
+    if (saved) setSelectedIds(new Set());
   };
 
   const persist = async (next) => {
@@ -292,30 +439,29 @@ export default function Admin() {
 
   const saveProduct = async (e) => {
     e.preventDefault();
-    if (!form.id || !form.name || !form.price) {
-      toast({
-        title: "Missing fields",
-        description: "id, name, and price are required.",
-        variant: "destructive",
-      });
-      return;
+    if (!validateForm()) return;
+
+    setSavingProduct(true);
+    try {
+      const cleaned = {
+        ...form,
+        price: Number(form.price) || 0,
+        rating: Number(form.rating) || 4.5,
+        image_url: form.image_url || undefined,
+        images: galleryList(),
+        featured: Boolean(form.featured),
+      };
+      const exists = products.some((p) => p.id === cleaned.id);
+      const next = exists
+        ? products.map((p) => (p.id === cleaned.id ? cleaned : p))
+        : [cleaned, ...products];
+      const saved = await persist(next);
+      if (!saved) return;
+      if (exists) setEditingId(cleaned.id);
+      else clearForm();
+    } finally {
+      setSavingProduct(false);
     }
-    const cleaned = {
-      ...form,
-      price: Number(form.price) || 0,
-      rating: Number(form.rating) || 4.5,
-      image_url: form.image_url || undefined,
-      images: galleryList(),
-      featured: Boolean(form.featured),
-    };
-    const exists = products.some((p) => p.id === cleaned.id);
-    const next = exists
-      ? products.map((p) => (p.id === cleaned.id ? cleaned : p))
-      : [cleaned, ...products];
-    const saved = await persist(next);
-    if (!saved) return;
-    if (exists) setEditingId(cleaned.id);
-    else clearForm();
   };
 
   const removeProduct = async (id) => {
@@ -808,6 +954,192 @@ export default function Admin() {
                   />
                 </label>
               </div>
+
+              {/* Variants */}
+              <fieldset className="border border-border rounded-sm p-3">
+                <legend className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground px-2">
+                  Variants (size, color, etc.)
+                </legend>
+                <div className="mt-2 space-y-2">
+                  {form.variants.map((variant, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder="Name (e.g., Red, Large)"
+                        className={inputCls}
+                        value={variant.name || ""}
+                        onChange={(e) => {
+                          const next = [...form.variants];
+                          next[idx] = { ...next[idx], name: e.target.value };
+                          setField("variants", next);
+                        }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="SKU"
+                        className={`w-32 ${inputCls}`}
+                        value={variant.sku || ""}
+                        onChange={(e) => {
+                          const next = [...form.variants];
+                          next[idx] = { ...next[idx], sku: e.target.value };
+                          setField("variants", next);
+                        }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Qty"
+                        className={`w-20 ${inputCls}`}
+                        value={variant.inventory_qty || 0}
+                        onChange={(e) => {
+                          const next = [...form.variants];
+                          next[idx] = { ...next[idx], inventory_qty: Number(e.target.value) || 0 };
+                          setField("variants", next);
+                        }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Price adj."
+                        className={`w-24 ${inputCls}`}
+                        step="0.01"
+                        value={variant.price_adjustment || 0}
+                        onChange={(e) => {
+                          const next = [...form.variants];
+                          next[idx] = { ...next[idx], price_adjustment: Number(e.target.value) || 0 };
+                          setField("variants", next);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = form.variants.filter((_, i) => i !== idx);
+                          setField("variants", next);
+                        }}
+                        className="p-1 text-muted-foreground hover:text-destructive"
+                        aria-label="Remove variant"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setField("variants", [...form.variants, { name: "", sku: "", inventory_qty: 0, price_adjustment: 0 }])}
+                    className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80"
+                  >
+                    <Plus className="h-4 w-4" /> Add variant
+                  </button>
+                </div>
+              </fieldset>
+
+              {/* Inventory Quantity */}
+              <label className="block">
+                <span className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Total Inventory Qty
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  className={`mt-1 ${inputCls}`}
+                  value={form.inventory_qty}
+                  onChange={(e) => setField("inventory_qty", e.target.value)}
+                />
+                <p className="mt-1 font-mono-tech text-[10px] text-muted-foreground">
+                  Total stock quantity. Leave at 0 for unlimited / made-to-order.
+                </p>
+              </label>
+
+              {/* SEO Fields */}
+              <fieldset className="border border-border rounded-sm p-3">
+                <legend className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground px-2 flex items-center gap-1.5">
+                  <Search className="h-3.5 w-3.5" /> SEO
+                </legend>
+                <div className="mt-2 grid gap-3">
+                  <label className="block">
+                    <span className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Meta Title
+                    </span>
+                    <input
+                      className={`mt-1 ${inputCls}`}
+                      value={form.seo_title}
+                      onChange={(e) => setField("seo_title", e.target.value)}
+                      placeholder="Defaults to product name"
+                      maxLength={60}
+                    />
+                    <p className="mt-1 font-mono-tech text-[10px] text-muted-foreground">
+                      Max 60 chars. Shown in search results.
+                    </p>
+                  </label>
+                  <label className="block">
+                    <span className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Meta Description
+                    </span>
+                    <textarea
+                      className={`mt-1 ${inputCls}`}
+                      rows={2}
+                      value={form.seo_description}
+                      onChange={(e) => setField("seo_description", e.target.value)}
+                      placeholder="Defaults to short description"
+                      maxLength={160}
+                    />
+                    <p className="mt-1 font-mono-tech text-[10px] text-muted-foreground">
+                      Max 160 chars. Shown in search results.
+                    </p>
+                  </label>
+                  <label className="block">
+                    <span className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                      URL Slug
+                    </span>
+                    <input
+                      className={`mt-1 ${inputCls}`}
+                      value={form.slug}
+                      onChange={(e) => setField("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                      placeholder="auto-generated from name"
+                    />
+                    <p className="mt-1 font-mono-tech text-[10px] text-muted-foreground">
+                      Lowercase, hyphens only. Auto-generated if empty.
+                    </p>
+                  </label>
+                </div>
+              </fieldset>
+
+              {/* Publishing Schedule */}
+              <fieldset className="border border-border rounded-sm p-3">
+                <legend className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground px-2 flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" /> Publishing Schedule
+                </legend>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Publish Date
+                    </span>
+                    <input
+                      type="datetime-local"
+                      className={`mt-1 ${inputCls}`}
+                      value={form.published_at ? form.published_at.slice(0, 16) : ""}
+                      onChange={(e) => setField("published_at", e.target.value ? new Date(e.target.value).toISOString() : null)}
+                    />
+                    <p className="mt-1 font-mono-tech text-[10px] text-muted-foreground">
+                      Product visible after this date.
+                    </p>
+                  </label>
+                  <label className="block">
+                    <span className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Unpublish Date
+                    </span>
+                    <input
+                      type="datetime-local"
+                      className={`mt-1 ${inputCls}`}
+                      value={form.unpublished_at ? form.unpublished_at.slice(0, 16) : ""}
+                      onChange={(e) => setField("unpublished_at", e.target.value ? new Date(e.target.value).toISOString() : null)}
+                    />
+                    <p className="mt-1 font-mono-tech text-[10px] text-muted-foreground">
+                      Product hidden after this date.
+                    </p>
+                  </label>
+                </div>
+              </fieldset>
+
               <div className="flex gap-2">
                 <button
                   type="submit"

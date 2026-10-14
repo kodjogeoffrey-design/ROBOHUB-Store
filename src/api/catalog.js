@@ -42,6 +42,13 @@ function normalizeProduct(raw) {
     images: Array.isArray(raw.images) ? raw.images : [],
     image_url: raw.image_url || undefined,
     stock_status: raw.stock_status || "In Stock",
+    variants: Array.isArray(raw.variants) ? raw.variants : [],
+    inventory_qty: Number(raw.inventory_qty) || 0,
+    seo_title: raw.seo_title || "",
+    seo_description: raw.seo_description || "",
+    slug: raw.slug || "",
+    published_at: raw.published_at || null,
+    unpublished_at: raw.unpublished_at || null,
   };
 }
 
@@ -65,6 +72,13 @@ function toRow(product) {
     rating: Number(product.rating) || 4.5,
     created_date: created,
     updated_at: new Date().toISOString(),
+    variants: Array.isArray(product.variants) ? product.variants : [],
+    inventory_qty: Number(product.inventory_qty) || 0,
+    seo_title: product.seo_title || "",
+    seo_description: product.seo_description || "",
+    slug: product.slug || "",
+    published_at: product.published_at || null,
+    unpublished_at: product.unpublished_at || null,
   };
 }
 

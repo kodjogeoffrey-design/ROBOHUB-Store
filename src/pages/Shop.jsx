@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { listProducts, listCategories } from "@/api/catalog";
-import { Search, SlidersHorizontal, GitCompare, X } from "lucide-react";
+import { getSearchSuggestions } from "@/api/search";
+import { Search, SlidersHorizontal, GitCompare, X, Loader2 } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { formatPrice } from "@/lib/config";
 
@@ -36,6 +37,7 @@ export default function Shop() {
   const [all, setAll] = useState([]);
   const [categories, setCategories] = useState(["All"]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [search, setSearch] = useState(q);
   const [sort, setSort] = useState("featured");
   const [minPrice, setMinPrice] = useState("");
@@ -43,11 +45,14 @@ export default function Shop() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [compareIds, setCompareIds] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     setSearch(q);
   }, [q]);
 
+  // Load categories and initial product list
   useEffect(() => {
     listProducts("-created_date", 200)
       .then(setAll)
@@ -55,6 +60,27 @@ export default function Shop() {
       .finally(() => setLoading(false));
     setCategories(["All", ...listCategories()]);
   }, []);
+
+  // Debounced search suggestions
+  const fetchSuggestions = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      const results = await getSearchSuggestions(query, 5);
+      setSuggestions(results);
+    } catch {
+      setSuggestions([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSuggestions(search);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [search, fetchSuggestions]);
 
   const setCategory = (c) => {
     const next = new URLSearchParams(params);
@@ -69,6 +95,18 @@ export default function Shop() {
     if (search.trim()) next.set("q", search.trim());
     else next.delete("q");
     setParams(next);
+    setShowSuggestions(false);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    setShowSuggestions(true);
+  };
+
+  const selectSuggestion = (suggestion) => {
+    setSearch(suggestion.name);
+    setShowSuggestions(false);
   };
 
   const toggleCompare = (id) => {
@@ -140,16 +178,41 @@ export default function Shop() {
 
       {/* Search + sort */}
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <form onSubmit={submitSearch} className="flex flex-1 items-center gap-2 rounded-sm border border-border bg-card px-3 py-2.5 focus-within:border-primary/60">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, SKU, or category…"
-            className="flex-1 bg-transparent font-mono-tech text-sm placeholder:text-muted-foreground/60 focus:outline-none"
-          />
-          <button type="submit" className="font-mono-tech text-[11px] uppercase tracking-wider text-primary">Go</button>
-        </form>
+        <div className="flex flex-1 relative">
+          <form onSubmit={submitSearch} className="flex flex-1 items-center gap-2 rounded-sm border border-border bg-card px-3 py-2.5 focus-within:border-primary/60">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={handleSearchChange}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              placeholder="Search by name, SKU, or category…"
+              className="flex-1 bg-transparent font-mono-tech text-sm placeholder:text-muted-foreground/60 focus:outline-none"
+              autoComplete="off"
+            />
+            {searchLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+            <button type="submit" className="font-mono-tech text-[11px] uppercase tracking-wider text-primary">Go</button>
+          </form>
+
+          {/* Search suggestions dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-sm border border-border bg-card shadow-lg overflow-hidden">
+              {suggestions.map((s, idx) => (
+                <button
+                  key={`${s.name}-${idx}`}
+                  type="button"
+                  onClick={() => selectSuggestion(s)}
+                  className="w-full px-3 py-2 text-left font-mono-tech text-sm hover:bg-primary/10 focus:bg-primary/10"
+                >
+                  <span className="font-heading font-600">{s.name}</span>
+                  <span className="ml-2 font-mono-tech text-[10px] uppercase text-muted-foreground">
+                    {s.category}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2 rounded-sm border border-border bg-card px-3 py-2.5">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           <select
