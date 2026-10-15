@@ -158,12 +158,22 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <button
-                className="flex h-10 items-center gap-2 rounded-sm border border-border bg-background px-3 py-2 font-mono-tech text-xs font-700 uppercase tracking-wider transition-colors hover:border-primary/50 md:hidden"
-                onClick={() => setAuthModalOpen(true)}
-              >
-                <User className="h-3.5 w-3.5" /> Sign in
-              </button>
+              <>
+                {/* Desktop sign in button */}
+                <button
+                  className="hidden md:flex h-10 items-center gap-2 rounded-sm border border-border bg-background px-3 py-2 font-mono-tech text-xs font-700 uppercase tracking-wider transition-colors hover:border-primary/50"
+                  onClick={() => setAuthModalOpen(true)}
+                >
+                  <User className="h-3.5 w-3.5" /> Sign in
+                </button>
+                {/* Mobile sign in button */}
+                <button
+                  className="flex h-10 items-center gap-2 rounded-sm border border-border bg-background px-3 py-2 font-mono-tech text-xs font-700 uppercase tracking-wider transition-colors hover:border-primary/50 md:hidden"
+                  onClick={() => setAuthModalOpen(true)}
+                >
+                  <User className="h-3.5 w-3.5" /> Sign in
+                </button>
+              </>
             )}
 
             <button

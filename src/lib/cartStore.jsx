@@ -96,18 +96,41 @@ export function CartProvider({ children }) {
     }
   }, [items]);
 
-  // Sync to server when items change (debounced)
+  // Sync to server when items change (debounced) - skip on admin routes
   useEffect(() => {
     if (!isAuthenticated || !user?.id || syncing) return;
+    // Don't sync cart on admin/console pages
+    if (typeof window !== "undefined" && (window.location.pathname.startsWith("/console") || window.location.pathname.startsWith("/admin"))) {
+      return;
+    }
     const timer = setTimeout(() => {
       setSyncing(true);
       saveCart(user.id, items, couponCode)
         .then(() => {})
         .catch(() => {})
         .finally(() => setSyncing(false));
-    }, 1000);
+    }, 5000); // 5 second debounce
     return () => clearTimeout(timer);
   }, [items, couponCode, isAuthenticated, user?.id, syncing]);
+
+  // Also sync on page unload/hide for immediate persistence
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+    const handleBeforeUnload = () => {
+      saveCart(user.id, items, couponCode).catch(() => {});
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        saveCart(user.id, items, couponCode).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [items, couponCode, isAuthenticated, user?.id]);
 
   // Validate stock for cart items
   useEffect(() => {

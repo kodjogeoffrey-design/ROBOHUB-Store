@@ -293,7 +293,7 @@ export default function Admin() {
       setProducts(next.map(productToForm));
       toast({
         title: "Catalog saved",
-        description: isSupabaseConfigured ? "Saved to Supabase." : "Stored in this browser.",
+        description: isSupabaseConfigured ? "Saved to database." : "Stored in this browser.",
       });
       return true;
     } catch (err) {
