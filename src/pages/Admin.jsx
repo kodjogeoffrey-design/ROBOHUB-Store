@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Search,
   Calendar,
+  X,
 } from "lucide-react";
 import {
   saveCatalog,
@@ -738,6 +739,62 @@ export default function Admin() {
             >
               <RotateCcw className="h-3.5 w-3.5" /> Reset seed
             </button>
+          </div>
+        </div>
+
+        {/* Search bar */}
+        <div className="p-4 border-b border-border">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex flex-1 min-w-[250px] items-center gap-2 rounded-sm border border-border bg-background px-3 py-2.5">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products by name, ID, SKU, category..."
+                className="flex-1 bg-transparent font-mono-tech text-sm placeholder:text-muted-foreground/60 focus:outline-none"
+              />
+            </label>
+            <label className="flex items-center gap-1.5 font-mono-tech text-[11px] uppercase tracking-wider text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={showOnlyFeatured}
+                onChange={(e) => setShowOnlyFeatured(e.target.checked)}
+                className="h-4 w-4 accent-primary"
+              />
+              Featured only
+            </label>
+            <label className="flex items-center gap-1.5 font-mono-tech text-[11px] uppercase tracking-wider text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={showOnlyLowStock}
+                onChange={(e) => setShowOnlyLowStock(e.target.checked)}
+                className="h-4 w-4 accent-primary"
+              />
+              Low stock
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="rounded-sm border border-border bg-background px-3 py-2 font-mono-tech text-[11px] uppercase tracking-wider focus:border-primary/60 focus:outline-none"
+            >
+              <option value="-created_date">Newest first</option>
+              <option value="created_date">Oldest first</option>
+              <option value="name">Name A–Z</option>
+              <option value="-name">Name Z–A</option>
+              <option value="-price">Price high–low</option>
+              <option value="price">Price low–high</option>
+              <option value="-rating">Rating high–low</option>
+            </select>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="flex items-center gap-1.5 rounded-sm border border-border bg-background px-3 py-2 font-mono-tech text-[11px] uppercase tracking-wider hover:border-primary/50"
+              >
+                <X className="h-3.5 w-3.5" /> Clear
+              </button>
+            )}
           </div>
         </div>
 
